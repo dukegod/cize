@@ -1,4 +1,49 @@
 /**
+ * 公共函数
+ **/
+(function ($, $$) {
+
+  $$.ajax = function (url, options, data, callback) {
+    if (arguments.length == 3) {
+      callback = data;
+      data = options;
+      options = null;
+    } else if (arguments.length == 2) {
+      callback = options;
+      data = null;
+      options = null;
+    }
+    options = options || {};
+    callback = callback || function () { };
+    data = data || options.data;
+    return $.ajax({
+      url: url + '?_t=' + Date.now(),
+      type: options.type || 'POST',
+      contentType: options.contentType || "application/json",
+      dataType: options.dataType || 'json',
+      data: data ? JSON.stringify(data) : data,
+      success: function (rs) {
+        callback(null, rs);
+      },
+      error: function (xhr) {
+        callback(new Error('Ajax Error: ' + xhr.status), xhr);
+      }
+    });
+  };
+
+  $$.get = function (url, callback) {
+    return $$.ajax(url, {
+      type: 'GET'
+    }, null, callback);
+  };
+
+  $$.post = function (url, data, callback) {
+    return $$.ajax(url, null, data, callback);
+  };
+
+})(jQuery, this.$$ = {});
+
+/**
  * 定时刷新
  **/
 (function ($) {
@@ -6,31 +51,39 @@
   var LONG_INTERVAL = 7500;
   var SHORT_INTERVAL = 2500;
 
-  function _fetchOut(interval) {
-    var console = $('.console');
-    var spinner = $('.fa-spinner');
+  function _refresh(interval) {
+    var console = $('.console-wraper .console');
+    var spinner = $('.console-wraper .fa-spinner');
     var inConsole = console && console.length > 0;
     var isRuning = spinner && spinner.length > 0;
     if (!inConsole) {
       $('#panel-center .list-group .list-group-item.active').click();
-      return fetchOut(LONG_INTERVAL);
+      return refresh(LONG_INTERVAL);
     }
+    var scrollToButtom = function () {
+      console.prop('scrollTop', console.prop('scrollHeight'));
+    };
     if (!isRuning) {
-      return fetchOut(LONG_INTERVAL);
+      $('.console-wraper .list-group-item').click();
+      return refresh(LONG_INTERVAL);
     }
-    var url = location.href.split('?')[0];
-    $.get(url + '/console?_t=' + Date.now(), function (data) {
-      if (console.html() != data) {
-        console.html(data);
-        console.prop('scrollTop', console.prop('scrollHeight'));
+    var url = '/api' + location.pathname + '/console';
+    $$.get(url, function (err, rs) {
+      if (err) return console.error(err);
+      if (console.html() != rs.out) {
+        console.html(rs.out);
+        scrollToButtom();
       }
-      return fetchOut(SHORT_INTERVAL);
+      if (rs.status != 100) {
+        $('.console-wraper .list-group-item').click();
+      }
+      return refresh(SHORT_INTERVAL);
     });
   }
-  function fetchOut(interval) {
-    return setTimeout(_fetchOut, interval);
+  function refresh(interval) {
+    return setTimeout(_refresh, interval);
   }
-  fetchOut(SHORT_INTERVAL);
+  refresh(SHORT_INTERVAL);
 
 })(jQuery);
 
@@ -54,25 +107,20 @@
     try {
       params = JSON.parse(params);
     } catch (err) {
-      paramsInput.attr('title', err.message);
-      confirmButton.attr('title', err.message);
-      return paramsInput.addClass('danger');
+      try {
+        params = jsyaml.load(params);
+      } catch (err) {
+        paramsInput.attr('title', err.message);
+        confirmButton.attr('title', err.message);
+        return paramsInput.addClass('danger');
+      }
     }
     var triggerButton = $('#btn-trigger');
     var url = triggerButton.attr('data-trigger');
-    $.ajax({
-      url: url + '?_t=' + Date.now(),
-      type: 'POST',
-      contentType: "application/json",
-      dataType: 'json',
-      data: JSON.stringify(params),
-      success: function (res) {
-        if (!res.status) {
-          return paramsInput.addClass('danger');
-        }
-        $('#panel-center .list-group .list-group-item.active').click();
-        triggerDialog.modal('hide');
-      }
+    $$.post(url, params, function (err) {
+      if (err) return paramsInput.addClass('danger');
+      $('#panel-center .list-group .list-group-item.active').click();
+      triggerDialog.modal('hide');
     });
   });
 
@@ -84,8 +132,8 @@
 (function ($) {
   $(document).on('click', '[data-rerun]', function (event) {
     var url = $(this).attr('data-rerun');
-    $.post(url + '?_t=' + Date.now(), function (res) {
-      if (!res.status) return $(this).addClass('danger');;
+    $$.post(url, function (err) {
+      if (err) return $(this).addClass('danger');;
       $('#panel-center .list-group .list-group-item.active').click();
     });
     return false;
@@ -114,10 +162,11 @@
     if (!val || isNaN(val)) {
       return maxAgeInput.addClass('danger');
     }
-    $.post('/setting/token', {
+    $$.post('/api/token', {
       maxAge: 60 * 60 * Number(val)
-    }, function (token) {
-      tokenArea.text(token);
+    }, function (err, rs) {
+      if (err) return consoel.error(err);
+      tokenArea.text(rs.token);
     });
   });
 

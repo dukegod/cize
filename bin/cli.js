@@ -1,74 +1,51 @@
 #!/usr/bin/env node
 
+const path = require('path');
 const CmdLine = require('cmdline');
 const cluster = require('cluster');
-const ci = require('../');
-const path = require('path');
-const fs = require('fs');
-const utils = ci.utils;
-const pkg = ci.pkg;
+const pkg = require('../package.json');
 const os = require('os');
+const fs = require('fs');
+const console = require('console3');
+const stp = require('stp');
+const cmdline = require('cmdline');
 
-const CONF_FILE = `${pkg.name}file.js`;
-const FILE_EXP = /\.js$/i;
-
-const cmdline = new CmdLine();
-
-/**
- * 查看版本
- **/
-if (cmdline.options.has('-v')) {
-  return console.info(`${pkg.name} ${pkg.version}`);
-}
-
-/**
- * 计算 confPath
- **/
-var confPath = path.resolve(process.cwd(), cmdline.args[0] || './');
-if (!FILE_EXP.test(confPath)) {
-  confPath = path.normalize(`${confPath}/${CONF_FILE}`);
-}
-if (!fs.existsSync(confPath)) {
-  console.error(`"${confPath}" not found`);
-  return process.exit(1);
-}
+cmdline.NAME = pkg.name;
+cmdline.VERSION = pkg.version;
+cmdline.CONFIG_FILE_NAME = `${pkg.name}file.js`;
+cmdline.CONFIG_FILE_REGEXP = /\.js$/i;
 
 if (cluster.isMaster) {
-
-  /**
-   *  cluster
-   **/
-  console.log('Strarting...');
-  var workerNum = Number(cmdline.options.getValue('-w') || os.cpus().length);
-  for (var i = 0; i < workerNum; i++) {
-    cluster.fork();
-  }
-  cluster.on('disconnect', (worker) => {
-    console.error(`#${worker.id} disconnected`);
-    cluster.fork();
-  });
-
-} else {
-
-  /**
-   * 在 worker 中启动服务
-   **/
-  ci.config({
-    workspace: path.dirname(confPath),
-    port: 9000
-  });
-  var confFunc = require(confPath);
-  if (utils.isFunction(confFunc)) {
-    confFunc(ci);
-  }
-  ci.start();
-
-  /**
-   * 监控配置文件
-   **/
-  fs.watch(confPath, function () {
-    cluster.worker.disconnect();
-    process.exit(0);
-  });
-
+  cmdline.HELP_INFO = stp(fs.readFileSync(path.normalize(`${__dirname}/help.txt`)).toString(), {
+    cmd: cmdline.NAME,
+    conf: cmdline.CONFIG_FILE_NAME
+  }) + os.EOL;
 }
+
+cmdline
+  .error(function (err) {
+    console.error(err.message);
+  })
+  .version(`${cmdline.NAME.toUpperCase()} ${cmdline.VERSION}`)
+  .help(cmdline.HELP_INFO)
+  .option(['-p', '--port'], 'number')
+  .option(['-s', '--secret'], 'string')
+  .option(['-w', '--worker'], 'number')
+  .option(['-m', '--mode'], 'string')
+  .option('--project', 'string')
+  .option('--job', 'string')
+  .option('--params', 'string*')
+  .action({ options: ['--project', '--job'] }, function (project, job) {
+    require('./invoker')(cmdline);
+    return false;
+  })
+  .action(function ($1) {
+    //计算 confPath
+    cmdline.configFile = path.resolve(process.cwd(), $1 || './');
+    if (!cmdline.CONFIG_FILE_REGEXP.test(cmdline.configFile)) {
+      cmdline.configFile = path.normalize(`${cmdline.configFile}/${cmdline.CONFIG_FILE_NAME}`);
+    }
+    require(cluster.isMaster ? './master' : './worker')(cmdline);
+    return false;
+  }, false)
+  .ready();

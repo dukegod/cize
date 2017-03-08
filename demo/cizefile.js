@@ -5,8 +5,8 @@
  * workspace：工作目录，默认为 cizefile.js 所在目录
  **/
 cize.config({
-  port: 9000,
-  secret: '12345'
+  secret: '12345',
+  //mode: 'new-process'
 });
 
 /**
@@ -15,12 +15,12 @@ cize.config({
  **/
 const demo = cize.project('demo', {});
 
-/**
+/**  
  * 定义一个 JOB，这是一个最基本的 JOB，
- * 其它各类，都是在此基础之上的「扩展」
+ * 其它各类，都是在此基础之上的「扩展」   
  **/
-demo.job('hello1', function (self) {
-  self.console.log('hello world');
+demo.job('job1', function (self) {
+  self.console.log('hello job1');
   self.done();
 });
 
@@ -28,9 +28,8 @@ demo.job('hello1', function (self) {
  * 定义一个用 SHELL 编写的 JOB
  * 如下用到了 cize.shell，这是多个「内置扩展」中的一个
  **/
-demo.job('hello2', cize.shell(function () {
+demo.job('job2', cize.shell(function () {
   /*
-    echo "hello world"
-    npm test 
+    echo "hello job2"
   */
 }));

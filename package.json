@@ -1,6 +1,6 @@
 {
   "name": "cize",
-  "version": "0.0.27",
+  "version": "0.3.5",
   "dbVersion": "1",
   "description": "Cize 是一个「持续集成」工具",
   "main": "index.js",
@@ -10,6 +10,9 @@
   "scripts": {
     "test": "mocha -t 5s",
     "cover": "istanbul cover _mocha"
+  },
+  "engines": {
+    "node": ">=4.0.0"
   },
   "keywords": [
     "ci",
@@ -26,30 +29,35 @@
   },
   "license": "MIT",
   "dependencies": {
-    "ansi-to-html": "^0.4.1",
+    "ansi-to-html-umd": "^0.4.2",
     "async": "^1.5.2",
-    "bootstrap": "^3.3.6",
-    "cify": "^1.0.0",
-    "cmdline": "0.0.5",
-    "cron": "^1.1.0",
+    "bootstrap": "^3.3.7",
+    "chokidar": "^1.6.1",
+    "cify": "^2.1.1",
+    "cmdline": "^2.0.2",
+    "console3": "^1.0.4",
+    "cron": "^1.2.1",
     "exit-hook2": "^1.0.8",
-    "font-awesome": "^4.6.3",
+    "font-awesome": "^4.7.0",
     "jquery": "^2.2.4",
-    "jwt-simple": "^0.5.0",
-    "lodash": "^4.13.1",
-    "md5": "^2.1.0",
+    "js-yaml": "^3.7.0",
+    "jwt-simple": "^0.5.1",
+    "lodash": "^4.17.4",
+    "md5": "^2.2.1",
     "mkdir-p": "0.0.7",
-    "nokit-pjax": "^0.1.9",
-    "nokitjs": "^1.24.4",
-    "orm": "^3.1.0",
-    "real-utils": "0.0.1",
-    "request": "^2.72.0",
+    "nokit-pjax": "^0.2.0",
+    "nokitjs": "^1.26.3",
+    "ntils": "^2.0.3",
+    "orm": "^3.2.3",
+    "request": "^2.79.0",
     "rmdir": "^1.2.0",
-    "shify": "^0.1.0",
-    "sqlite3": "^3.1.4"
+    "shify": "^0.1.2",
+    "sqlite3": "^3.1.4",
+    "stp": "0.0.2"
   },
+  "optionalDependencies": {},
   "devDependencies": {
-    "istanbul": "^0.4.3",
+    "istanbul": "^0.4.4",
     "mocha": "^2.5.3"
   }
 }
